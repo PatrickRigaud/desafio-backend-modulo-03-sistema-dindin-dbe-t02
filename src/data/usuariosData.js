@@ -1,8 +1,8 @@
 const database = require('../infra/database')
 
-const buscarUsuariosQuery = () => {
-	return database.query('select * from usuarios')}
-
+const cadastrarUsuarioQuery = (nome, email, senha) => {
+    return database.query('insert into usuarios (nome, email, senha) values ($1, $2, $3) RETURNING *;', [nome, email, senha])
+}
 
 
 
@@ -11,5 +11,5 @@ const buscarUsuariosQuery = () => {
 
     
 module.exports = {
-    buscarUsuariosQuery
+    cadastrarUsuarioQuery
 }
