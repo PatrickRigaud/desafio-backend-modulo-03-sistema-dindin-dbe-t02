@@ -2,7 +2,7 @@ const {cadastrarUsuarioQuery, buscarUsuarioPorEmail} = require('../data/usuarios
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken')
-const senhaJwt = require('../infra/senhaJwt')
+require('dotenv').config()
 
 
 const cadastrarUsuario = async (req, res) => {
@@ -15,9 +15,8 @@ const cadastrarUsuario = async (req, res) => {
   try{
     const senhaEncriptada = await bcrypt.hash(senha, 10)
     if(validator.validate(email)){
-        const cadastro = await cadastrarUsuarioQuery(nome, email, senhaEncriptada)
-        const dadosRetorno = cadastro.rows[0]
-        const {id} = dadosRetorno
+        const {rows} = await cadastrarUsuarioQuery(nome, email, senhaEncriptada)
+        const {id} = rows[0]
     
         return res.status(201).json({id, nome, email})
     } else{
@@ -50,7 +49,7 @@ const loginUsuario = async (req, res) => {
         return res.status(400).json({message: 'Usuário e/ou senha inválido(s).'})
     }
       
-    const token = jwt.sign({email}, senhaJwt)
+    const token = jwt.sign({email}, process.env.senha_jwt)
     return res.status(200).json({usuario: {
         id: rows[0].id,
         nome: rows[0].nome,
