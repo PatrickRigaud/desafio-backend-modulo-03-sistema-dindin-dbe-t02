@@ -1,4 +1,5 @@
-const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID} = require('../data/usuariosData')
+const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
+const {prepararToken} = require('./intermediarios')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken')
@@ -69,8 +70,7 @@ const detalharUsuario = async (req, res) => {
     const {authorization} = req.headers
 
     try {
-        const token = authorization.split(' ')[1]
-        const validarToken = jwt.verify(token, process.env.senha_jwt)
+        const validarToken = prepararToken(authorization)
         const {rows} = await buscarUsuarioID(validarToken.id)
         const {id, nome, email} = rows[0]
         
@@ -85,11 +85,62 @@ const detalharUsuario = async (req, res) => {
     
 }
 
+const alterarUsuario = async (req, res) => {
+    const {authorization} = req.headers
+    const {nome, email, senha} = req.body
+
+    try {
+        const validarToken = prepararToken(authorization)
+
+        if(!nome && !email && !senha){
+            return res.status(400).json({message: 'Para alteração é necessário enviar ao menos um campo.'})
+        }
+
+        const emailValido = validator.validate(email)
+        const {rows} = await buscarUsuarioPorEmail(email)
+        const usuario = await buscarUsuarioID(validarToken.id)
+        
+        
+        if(email && !emailValido){
+            return res.status(400).json({message: 'Email inválido.'})
+        }
+
+        if(rows.length != 0){
+            return res.status(400).json({message: 'Email já existe'})
+        }
+
+        let novoNome = ''
+        let novoEmail = ''
+        let novaSenha = ''
+
+        if(senha){
+            const senhaEncriptada = await bcrypt.hash(senha, 10)
+            senha ? novaSenha = senhaEncriptada : novaSenha = usuario.rows[0].senha 
+        }
+        nome ? novoNome = nome : novoNome = usuario.rows[0].nome
+        email ? novoEmail = email : novoEmail = usuario.rows[0].email
+        
+
+        await alterarUsuarioQuery(validarToken.id, novoNome, novoEmail, novaSenha)
+
+        return res.status(204).json({message: 'Alteração realizada'})
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+
+    
+
+}
+
+
+
 
 
 
 module.exports = {
     cadastrarUsuario,
     loginUsuario,
-    detalharUsuario
+    detalharUsuario,
+    alterarUsuario
 }

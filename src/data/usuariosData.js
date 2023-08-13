@@ -12,10 +12,13 @@ const buscarUsuarioID = (id) => {
     return database.query('select * from usuarios where id = $1', [id])
 }
 
-
+const alterarUsuarioQuery = (id, nome, email, senha) => {
+    return database.query('update usuarios set nome = $1, email = $2, senha = $3 where id = $4', [nome, email, senha, id])
+}
     
 module.exports = {
     cadastrarUsuarioQuery,
     buscarUsuarioPorEmail,
-    buscarUsuarioID
+    buscarUsuarioID,
+    alterarUsuarioQuery
 }
