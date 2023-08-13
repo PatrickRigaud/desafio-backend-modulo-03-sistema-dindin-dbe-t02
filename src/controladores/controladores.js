@@ -1,4 +1,4 @@
-const {cadastrarUsuarioQuery, buscarUsuarioPorEmail} = require('../data/usuariosData')
+const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID} = require('../data/usuariosData')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken')
@@ -49,7 +49,7 @@ const loginUsuario = async (req, res) => {
         return res.status(400).json({message: 'Usuário e/ou senha inválido(s).'})
     }
       
-    const token = jwt.sign({email}, process.env.senha_jwt)
+    const token = jwt.sign({id: rows[0].id}, process.env.senha_jwt)
     return res.status(200).json({usuario: {
         id: rows[0].id,
         nome: rows[0].nome,
@@ -65,9 +65,31 @@ const loginUsuario = async (req, res) => {
 }
 
 
+const detalharUsuario = async (req, res) => {
+    const {authorization} = req.headers
+
+    try {
+        const token = authorization.split(' ')[1]
+        const validarToken = jwt.verify(token, process.env.senha_jwt)
+        const {rows} = await buscarUsuarioID(validarToken.id)
+        const {id, nome, email} = rows[0]
+        
+        return res.status(200).json({
+            id,
+            nome,
+            email
+         })
+    } catch (error) {
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+    
+}
+
+
 
 
 module.exports = {
     cadastrarUsuario,
-    loginUsuario
+    loginUsuario,
+    detalharUsuario
 }

@@ -8,11 +8,14 @@ const buscarUsuarioPorEmail = (email) => {
     return database.query('select * from usuarios where email = $1', [email])
 }
 
-
+const buscarUsuarioID = (id) => {
+    return database.query('select * from usuarios where id = $1', [id])
+}
 
 
     
 module.exports = {
     cadastrarUsuarioQuery,
-    buscarUsuarioPorEmail
+    buscarUsuarioPorEmail,
+    buscarUsuarioID
 }
