@@ -1,0 +1,9 @@
+# Banco de dados
+DB_USUARIO=postgres
+DB_SENHA=xxxxx
+DB_HOST=localhost
+DB_PORT=5432
+DB_NOME_DB=xxxxx
+
+
+SENHA_JWT=xxxxx

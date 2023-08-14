@@ -1,16 +1,17 @@
 const express = require('express');
 const rotas = express();
-const verificarUsuarioLogado = require('../controladores/intermediarios');
-const listarCategorias = require('../data/categoriasData');
-const { cadastrarUsuario, buscarUsuariosQuery, login } = require('../data/usuariosData');
+const {cadastrarUsuario, loginUsuario, detalharUsuario, alterarUsuario} = require('../controladores/controladores')
+const {listarCategorias} = require('../data/categoriasData');
+
 
 rotas.post('/usuario', cadastrarUsuario)
-rotas.post('/login', login)
+rotas.post('/login', loginUsuario)
+rotas.get('/usuario', detalharUsuario)
+rotas.put('/usuario', alterarUsuario)
 
-rotas.use(verificarUsuarioLogado)
 
-// rotas.get('/usuario', buscarUsuariosQuery)
 rotas.get('/:id', listarCategorias)
+
 
 
 module.exports = rotas;
