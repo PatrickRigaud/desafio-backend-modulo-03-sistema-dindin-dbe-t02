@@ -1,4 +1,5 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery} = require('../data/transacoesData')
 const {prepararToken} = require('./intermediarios')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
@@ -127,14 +128,39 @@ const alterarUsuario = async (req, res) => {
     } catch (e) {
         console.log(e.message)
         return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
-    }
-
-    
+    }   
 
 }
 
+const listarTransacoes = async (req, res) => {
+    const {authorization} = req.headers
 
+    try {
+        const validarToken = prepararToken(authorization)
+        const { rows } = await buscarTodasTransacoesQuery(validarToken.id)
+        
+        return res.status(200).json(rows)
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
 
+}
+
+const buscarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {id} = req.params
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
+        
+        return res.status(200).json(rows)
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
 
 
 
@@ -142,5 +168,7 @@ module.exports = {
     cadastrarUsuario,
     loginUsuario,
     detalharUsuario,
-    alterarUsuario
+    alterarUsuario,
+    listarTransacoes,
+    buscarTransacao
 }

@@ -1,6 +1,6 @@
 const express = require('express');
 const rotas = express();
-const {cadastrarUsuario, loginUsuario, detalharUsuario, alterarUsuario} = require('../controladores/controladores')
+const {cadastrarUsuario, loginUsuario, detalharUsuario, alterarUsuario, listarTransacoes, buscarTransacao} = require('../controladores/controladores')
 const {listarCategorias} = require('../data/categoriasData');
 
 
@@ -12,7 +12,8 @@ rotas.put('/usuario', alterarUsuario)
 
 rotas.get('categoria/:id', listarCategorias)
 
-
+rotas.get('/transacoes', listarTransacoes)
+rotas.get('/transacoes/:id', buscarTransacao)
 
 module.exports = rotas;
 
