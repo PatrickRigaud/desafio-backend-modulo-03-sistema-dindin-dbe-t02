@@ -9,3 +9,4 @@ const prepararToken = (auth) => {
 module.exports = {
     prepararToken
 }
+
