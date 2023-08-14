@@ -10,7 +10,7 @@ rotas.get('/usuario', detalharUsuario)
 rotas.put('/usuario', alterarUsuario)
 
 
-rotas.get('/:id', listarCategorias)
+rotas.get('categoria/:id', listarCategorias)
 
 
 
