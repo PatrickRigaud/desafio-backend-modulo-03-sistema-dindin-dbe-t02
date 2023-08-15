@@ -1,6 +1,6 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
 const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery} = require('../data/transacoesData')
-const {prepararToken} = require('./intermediarios')
+const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken')
@@ -10,9 +10,7 @@ require('dotenv').config()
 const cadastrarUsuario = async (req, res) => {
     const {nome, email, senha} = req.body
 
-    if(!nome || !email || !senha){
-        return res.status(400).json({mensagem: "Preecha todos os campos"})
-    }
+    verificarCamposPassados([nome, email, senha], res)
 
   try{
     const senhaEncriptada = await bcrypt.hash(senha, 10)
@@ -35,10 +33,9 @@ const cadastrarUsuario = async (req, res) => {
 const loginUsuario = async (req, res) => {
     try{
     const {email, senha} = req.body
+ 
+    verificarCamposPassados([email, senha], res)
 
-    if(!email || !senha){
-        return res.status(400).json({mensagem: "Preecha todos os campos"})
-    }
     const {rows} = await buscarUsuarioPorEmail(email)
 
     if(rows.length === 0){
@@ -173,17 +170,11 @@ const cadastrarTransacao = async (req, res) => {
         const validarToken = prepararToken(authorization)
         const {rows} = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
         
-        if(!descricao || !valor || !data || !categoria_id || !tipo){
-            return res.status(400).json({mensagem: "Todos os campos obrigatórios devem ser informados."})
-        }
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
 
-        if(rows.length == 0){
-            return res.status(400).json({message: 'Categoria não encontrada.'})
-        }
+        verificarSeCategoriaFoiEncontrado(rows.length, res)
 
-        if(tipo != 'entrada' && tipo != 'saida'){
-            return res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
-        }
+        verificarTipoEntradaOuSaida(tipo, res)
 
         const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id)
         retornoCadastro.rows[0].categoria_nome = rows[0].descricao
@@ -207,22 +198,13 @@ const editarTransacao = async (req, res) => {
         const validarToken = prepararToken(authorization)
         const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
 
-        if(rows.length == 0){
-            return res.status(400).json({message: 'Transação não encontrada.'})
-        }
+        verificarTransacaoExiste(rows.length, res)
 
-        if(!descricao || !valor || !data || !categoria_id || !tipo){
-            return res.status(400).json({mensagem: "Todos os campos obrigatórios devem ser informados."})
-        }
-
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
         const transacaoExiste = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
-        if(transacaoExiste.rows.length == 0){
-            return res.status(400).json({message: 'Categoria não encontrada.'})
-        }
+        verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)
 
-        if(tipo != 'entrada' && tipo != 'saida'){
-            return res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
-        }
+        verificarTipoEntradaOuSaida(tipo, res)
 
        await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id, id)
 
@@ -241,10 +223,7 @@ const excluirTransacao = async (req, res) => {
         const validarToken = prepararToken(authorization)
         const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
 
-        if(rows.length == 0){
-            return res.status(400).json({message: 'Transação não encontrada.'})
-        }
-
+        verificarTransacaoExiste(rows.length, res)
         
         await excluirUmaTransacaoQuery(validarToken.id, id)
         return res.status(204).json()
