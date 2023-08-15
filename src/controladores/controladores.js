@@ -1,5 +1,5 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
-const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery} = require('../data/transacoesData')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery} = require('../data/transacoesData')
 const {prepararToken} = require('./intermediarios')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
@@ -198,6 +198,63 @@ const cadastrarTransacao = async (req, res) => {
 }
 
 
+const editarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {descricao, valor, data, categoria_id, tipo} = req.body
+    const {id} = req.params
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
+
+        if(rows.length == 0){
+            return res.status(400).json({message: 'Transação não encontrada.'})
+        }
+
+        if(!descricao || !valor || !data || !categoria_id || !tipo){
+            return res.status(400).json({mensagem: "Todos os campos obrigatórios devem ser informados."})
+        }
+
+        const transacaoExiste = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
+        if(transacaoExiste.rows.length == 0){
+            return res.status(400).json({message: 'Categoria não encontrada.'})
+        }
+
+        if(tipo != 'entrada' && tipo != 'saida'){
+            return res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
+        }
+
+       await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id, id)
+
+        return res.status(204).json()
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
+const excluirTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {id} = req.params
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
+
+        if(rows.length == 0){
+            return res.status(400).json({message: 'Transação não encontrada.'})
+        }
+
+        
+        await excluirUmaTransacaoQuery(validarToken.id, id)
+        return res.status(204).json()
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
+
 module.exports = {
     cadastrarUsuario,
     loginUsuario,
@@ -205,5 +262,7 @@ module.exports = {
     alterarUsuario,
     listarTransacoes,
     buscarTransacao,
-    cadastrarTransacao
+    cadastrarTransacao,
+    editarTransacao,
+    excluirTransacao
 }

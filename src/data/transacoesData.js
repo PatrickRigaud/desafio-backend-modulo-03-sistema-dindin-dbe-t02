@@ -18,9 +18,19 @@ const cadastrarTransacaoQuery = (descricao, valor, data, categoria_id, tipo, usu
     return database.query('insert into transacoes (descricao, valor, data, categoria_id, tipo, usuario_id) values ($1, $2, $3, $4, $5, $6) RETURNING *', [descricao, valor, data, categoria_id, tipo, usuario_id])
 }
 
+const editarUmaTransacaoQuery = (descricao, valor, data, categoria_id, tipo, usuario_id, id) => {
+    return database.query('update transacoes set descricao = $1, valor = $2, data = $3, categoria_id = $4, tipo = $5 where usuario_id = $6 and id = $7', [descricao, valor, data, categoria_id, tipo, usuario_id, id])
+}
+
+const excluirUmaTransacaoQuery = (usuario_id, id) => {
+    return database.query('delete from transacoes where usuario_id = $1 and id = $2', [usuario_id, id])
+}
+
 module.exports = {
     buscarTodasTransacoesQuery,
     buscarUmaTransacaoQuery,
     trasacaoExisteNoUsuario,
-    cadastrarTransacaoQuery
+    cadastrarTransacaoQuery,
+    editarUmaTransacaoQuery,
+    excluirUmaTransacaoQuery
 }
