@@ -1,5 +1,5 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
-const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery} = require('../data/transacoesData')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery} = require('../data/transacoesData')
 const {prepararToken} = require('./intermediarios')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
@@ -155,6 +155,9 @@ const buscarTransacao = async (req, res) => {
         const validarToken = prepararToken(authorization)
         const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
         
+        if(rows.length == 0){
+            return res.status(400).json({message: 'Transação não encontrada.'})
+        }
         return res.status(200).json(rows)
     } catch (e) {
         console.log(e.message)
@@ -162,6 +165,37 @@ const buscarTransacao = async (req, res) => {
     }
 }
 
+const cadastrarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {descricao, valor, data, categoria_id, tipo} = req.body
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
+        
+        if(!descricao || !valor || !data || !categoria_id || !tipo){
+            return res.status(400).json({mensagem: "Todos os campos obrigatórios devem ser informados."})
+        }
+
+        if(rows.length == 0){
+            return res.status(400).json({message: 'Categoria não encontrada.'})
+        }
+
+        if(tipo != 'entrada' && tipo != 'saida'){
+            return res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
+        }
+
+        const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id)
+        retornoCadastro.rows[0].categoria_nome = rows[0].descricao
+
+        return res.status(201).json(retornoCadastro.rows[0])
+         
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+
+}
 
 
 module.exports = {
@@ -170,5 +204,6 @@ module.exports = {
     detalharUsuario,
     alterarUsuario,
     listarTransacoes,
-    buscarTransacao
+    buscarTransacao,
+    cadastrarTransacao
 }
