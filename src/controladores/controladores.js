@@ -1,5 +1,5 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
-const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery} = require('../data/transacoesData')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes} = require('../data/transacoesData')
 const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
@@ -233,6 +233,25 @@ const excluirTransacao = async (req, res) => {
     }
 }
 
+const extratoTransacoes = async (req, res) => {
+    const {authorization} = req.headers
+
+    try {
+        const validarToken = prepararToken(authorization)
+
+        const {rows} = await buscarTodasTransacoes(validarToken.id)
+        
+        res.status(200).json({
+            "Entrada": rows[0].total,
+            "Saida": rows[0].total
+        })
+        
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
 
 module.exports = {
     cadastrarUsuario,
@@ -243,5 +262,6 @@ module.exports = {
     buscarTransacao,
     cadastrarTransacao,
     editarTransacao,
-    excluirTransacao
+    excluirTransacao,
+    extratoTransacoes
 }

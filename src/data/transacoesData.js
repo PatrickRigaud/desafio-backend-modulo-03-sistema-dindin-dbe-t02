@@ -26,11 +26,16 @@ const excluirUmaTransacaoQuery = (usuario_id, id) => {
     return database.query('delete from transacoes where usuario_id = $1 and id = $2', [usuario_id, id])
 }
 
+const buscarTodasTransacoes = (usuario_id) => {
+    return database.query("SELECT 'entrada' AS tipo, SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END) AS total FROM transacoes WHERE usuario_id = $1  UNION ALL  SELECT 'saida' AS tipo, SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END) AS total FROM transacoes WHERE usuario_id = $1;", [usuario_id])
+}
+
 module.exports = {
     buscarTodasTransacoesQuery,
     buscarUmaTransacaoQuery,
     trasacaoExisteNoUsuario,
     cadastrarTransacaoQuery,
     editarUmaTransacaoQuery,
-    excluirUmaTransacaoQuery
+    excluirUmaTransacaoQuery,
+    buscarTodasTransacoes
 }
