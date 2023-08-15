@@ -1,5 +1,6 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
-const {prepararToken} = require('./intermediarios')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes} = require('../data/transacoesData')
+const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken')
@@ -9,9 +10,7 @@ require('dotenv').config()
 const cadastrarUsuario = async (req, res) => {
     const {nome, email, senha} = req.body
 
-    if(!nome || !email || !senha){
-        return res.status(400).json({mensagem: "Preecha todos os campos"})
-    }
+    verificarCamposPassados([nome, email, senha], res)
 
   try{
     const senhaEncriptada = await bcrypt.hash(senha, 10)
@@ -34,10 +33,9 @@ const cadastrarUsuario = async (req, res) => {
 const loginUsuario = async (req, res) => {
     try{
     const {email, senha} = req.body
+ 
+    verificarCamposPassados([email, senha], res)
 
-    if(!email || !senha){
-        return res.status(400).json({mensagem: "Preecha todos os campos"})
-    }
     const {rows} = await buscarUsuarioPorEmail(email)
 
     if(rows.length === 0){
@@ -127,20 +125,143 @@ const alterarUsuario = async (req, res) => {
     } catch (e) {
         console.log(e.message)
         return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }   
+
+}
+
+const listarTransacoes = async (req, res) => {
+    const {authorization} = req.headers
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const { rows } = await buscarTodasTransacoesQuery(validarToken.id)
+        
+        return res.status(200).json(rows)
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
     }
 
-    
+}
+
+const buscarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {id} = req.params
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
+        
+        if(rows.length == 0){
+            return res.status(400).json({message: 'Transação não encontrada.'})
+        }
+        return res.status(200).json(rows)
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
+const cadastrarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {descricao, valor, data, categoria_id, tipo} = req.body
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
+        
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
+
+        verificarSeCategoriaFoiEncontrado(rows.length, res)
+
+        verificarTipoEntradaOuSaida(tipo, res)
+
+        const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id)
+        retornoCadastro.rows[0].categoria_nome = rows[0].descricao
+
+        return res.status(201).json(retornoCadastro.rows[0])
+         
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
 
 }
 
 
+const editarTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {descricao, valor, data, categoria_id, tipo} = req.body
+    const {id} = req.params
 
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
 
+        verificarTransacaoExiste(rows.length, res)
+
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
+        const transacaoExiste = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
+        verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)
+
+        verificarTipoEntradaOuSaida(tipo, res)
+
+       await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id, id)
+
+        return res.status(204).json()
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
+const excluirTransacao = async (req, res) => {
+    const {authorization} = req.headers
+    const {id} = req.params
+
+    try {
+        const validarToken = prepararToken(authorization)
+        const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
+
+        verificarTransacaoExiste(rows.length, res)
+        
+        await excluirUmaTransacaoQuery(validarToken.id, id)
+        return res.status(204).json()
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
+
+const extratoTransacoes = async (req, res) => {
+    const {authorization} = req.headers
+
+    try {
+        const validarToken = prepararToken(authorization)
+
+        const {rows} = await buscarTodasTransacoes(validarToken.id)
+        
+        res.status(200).json({
+            "Entrada": rows[0].total,
+            "Saida": rows[0].total
+        })
+        
+    } catch (e) {
+        console.log(e.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+    }
+}
 
 
 module.exports = {
     cadastrarUsuario,
     loginUsuario,
     detalharUsuario,
-    alterarUsuario
+    alterarUsuario,
+    listarTransacoes,
+    buscarTransacao,
+    cadastrarTransacao,
+    editarTransacao,
+    excluirTransacao,
+    extratoTransacoes
 }

@@ -18,7 +18,7 @@ create table transacoes (
 	id serial primary key,
 	descricao varchar(250),
     valor integer,
-    data timestamptz,
+    data timestamptz DEFAULT now(),
     usuario_id integer references usuarios(id),
     categoria_id integer references categorias(id),
     tipo varchar(100)
