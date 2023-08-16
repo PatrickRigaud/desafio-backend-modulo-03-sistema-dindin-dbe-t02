@@ -3,7 +3,8 @@ const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsu
 const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery } = require('../data/categoriasData');
 require('dotenv').config()
 
 
@@ -252,6 +253,48 @@ const extratoTransacoes = async (req, res) => {
     }
 }
 
+const listarCategorias = async (req, res) => {
+    const {authorization} = req.headers;
+    try {
+        const validarToken = prepararToken(authorization);
+        const resultado = await listarCategoriasQuery(validarToken.id);
+        return res.status(200).json(resultado.rows);
+    } catch (error) {
+        console.log(error.message);
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }
+};
+
+const detalharCategoria = async (req, res) => {
+    const {authorization} = req.headers;
+    try {
+        const validarToken = prepararToken(authorization);
+        const resultado = await detalharCategoriaQuery(req.params.id, validarToken.id);
+        if (resultado.rowCount === 0) {
+            return res.status(404).json({mensagem: 'Nenhuma categoria encontrada'});
+        } else {
+            return res.status(200).json(resultado.rows);
+        }
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }   
+};
+
+const criarCategoria = async (req, res) => {
+    const {authorization} = req.headers;
+    const {descricao} = req.body
+    try {
+        const validarToken = prepararToken(authorization);
+        console.log(validarToken)
+        const {rows} = await cadastrarCategoriasQuery(validarToken.id, descricao);
+        return res.status(201).json(rows[0]);
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }   
+}
+
 
 module.exports = {
     cadastrarUsuario,
@@ -263,5 +306,8 @@ module.exports = {
     cadastrarTransacao,
     editarTransacao,
     excluirTransacao,
-    extratoTransacoes
+    extratoTransacoes,
+    listarCategorias,
+    detalharCategoria,
+    criarCategoria
 }
