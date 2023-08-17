@@ -254,10 +254,8 @@ const extratoTransacoes = async (req, res) => {
 }
 
 const listarCategorias = async (req, res) => {
-    const {authorization} = req.headers;
     try {
-        const validarToken = prepararToken(authorization);
-        const resultado = await listarCategoriasQuery(validarToken.id);
+        const resultado = await listarCategoriasQuery(req.usuario_id);
         return res.status(200).json(resultado.rows);
     } catch (error) {
         console.log(error.message);
@@ -339,6 +337,7 @@ const excluirCategoria = async (req, res) => {
         return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
     }    
 }
+
 
 module.exports = {
     cadastrarUsuario,
