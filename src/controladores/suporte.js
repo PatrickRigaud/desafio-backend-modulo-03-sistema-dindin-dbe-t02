@@ -1,6 +1,18 @@
 const jwt = require('jsonwebtoken')
 
 
+const objMensagens = {
+    todosCamposObrigatorios: "Todos os campos obrigatórios devem ser informados.",
+    categoriaDeveSerInformada: "A descrição da categoria deve ser informada.",
+    tokenInvalido: "Para acessar este recurso um token de autenticação válido deve ser enviado.",
+    emailInvalido: "Email no formato inválido.",
+    emailJaExiste: "Já existe usuário cadastrado com o e-mail informado.",
+    usuarioSenhaInvalidos: "Usuário e/ou senha inválido(s).",
+    informarCategoria: "Informar descrição da categoria para alteração",
+    informarAoMenosUmCampo: 'Para alteração é necessário enviar ao menos um campo.'
+}
+
+
 const verificarSeCategoriaFoiEncontrado = (item, res) => {
     if(item == 0){
         return res.status(400).json({message: 'Categoria não encontrada.'})
@@ -13,13 +25,15 @@ const prepararToken = (auth) => {
 }
 
 
-const verificarCamposPassados = (listaCamposValidar, res) => {
+const verificarCamposPassados = (listaCamposValidar, res, message) => {
     for(let item of listaCamposValidar){
         if(!item){
-            return res.status(400).json({mensagem: "Todos os campos obrigatórios devem ser informados."})
+            return res.status(400).json({mensagem: message})
         }
     }
 }
+
+
 
 const verificarTransacaoExiste = (transacao, res) => {
     if(transacao == 0){
@@ -35,10 +49,19 @@ const verificarTipoEntradaOuSaida = (tipo, res) => {
 }
 
 
+const usuarioAcessoCategoria = (categoria, id, usuario_id, res) => {
+    if (categoria === 0 || id != usuario_id ){
+        return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
+    }
+}
+
+
 module.exports = {
     verificarSeCategoriaFoiEncontrado,
     prepararToken,
     verificarCamposPassados,
     verificarTransacaoExiste,
-    verificarTipoEntradaOuSaida
+    verificarTipoEntradaOuSaida,
+    objMensagens,
+    usuarioAcessoCategoria
 }

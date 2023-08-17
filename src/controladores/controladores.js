@@ -1,6 +1,6 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
 const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes} = require('../data/transacoesData')
-const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida} = require('./suporte')
+const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida, objMensagens, usuarioAcessoCategoria} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken');
@@ -11,7 +11,7 @@ require('dotenv').config()
 const cadastrarUsuario = async (req, res) => {
     const {nome, email, senha} = req.body
 
-    verificarCamposPassados([nome, email, senha], res)
+    verificarCamposPassados([nome, email, senha], res, objMensagens.categoriaDeveSerInformada)
 
   try{
     const senhaEncriptada = await bcrypt.hash(senha, 10)
@@ -21,12 +21,12 @@ const cadastrarUsuario = async (req, res) => {
     
         return res.status(201).json({id, nome, email})
     } else{
-        return res.status(400).json({mensagem: "Email em formato inválido."})
+        return res.status(400).json({mensagem: objMensagens.emailInvalido})
     }
    
   }catch(e){
     console.log(e.message)
-    return res.status(400).json({mensagem: "Já existe usuário cadastrado com o e-mail informado."})
+    return res.status(400).json({mensagem: objMensagens.emailJaExiste})
   }   
 }
 
@@ -35,18 +35,18 @@ const loginUsuario = async (req, res) => {
     try{
     const {email, senha} = req.body
  
-    verificarCamposPassados([email, senha], res)
+    verificarCamposPassados([email, senha], res, objMensagens.todosCamposObrigatorios)
 
     const {rows} = await buscarUsuarioPorEmail(email)
 
     if(rows.length === 0){
-        return res.status(400).json({message: 'Usuário e/ou senha inválido(s).'})
+        return res.status(400).json({message: objMensagens.usuarioSenhaInvalidos})
     }
 
     const senhaValida = await bcrypt.compare(senha, rows[0].senha)
 
     if(!senhaValida){
-        return res.status(400).json({message: 'Usuário e/ou senha inválido(s).'})
+        return res.status(400).json({message: objMensagens.usuarioSenhaInvalidos})
     }
       
     const token = jwt.sign({id: rows[0].id}, process.env.senha_jwt)
@@ -79,7 +79,7 @@ const detalharUsuario = async (req, res) => {
             email
          })
     } catch (error) {
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
     
 }
@@ -92,7 +92,7 @@ const alterarUsuario = async (req, res) => {
         const validarToken = prepararToken(authorization)
 
         if(!nome && !email && !senha){
-            return res.status(400).json({message: 'Para alteração é necessário enviar ao menos um campo.'})
+            return res.status(400).json({message: objMensagens.informarAoMenosUmCampo})
         }
 
         const emailValido = validator.validate(email)
@@ -101,11 +101,11 @@ const alterarUsuario = async (req, res) => {
         
         
         if(email && !emailValido){
-            return res.status(400).json({message: 'Email inválido.'})
+            return res.status(400).json({message: objMensagens.emailInvalido})
         }
 
         if(rows.length != 0){
-            return res.status(400).json({message: 'Email já existe'})
+            return res.status(400).json({message: objMensagens.emailJaExiste})
         }
 
         let novoNome = ''
@@ -122,10 +122,10 @@ const alterarUsuario = async (req, res) => {
 
         await alterarUsuarioQuery(validarToken.id, novoNome, novoEmail, novaSenha)
 
-        return res.status(204).json({message: 'Alteração realizada'})
+        return res.status(204).json()
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }   
 
 }
@@ -140,7 +140,7 @@ const listarTransacoes = async (req, res) => {
         return res.status(200).json(rows)
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 
 }
@@ -159,7 +159,7 @@ const buscarTransacao = async (req, res) => {
         return res.status(200).json(rows)
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 }
 
@@ -171,10 +171,8 @@ const cadastrarTransacao = async (req, res) => {
         const validarToken = prepararToken(authorization)
         const {rows} = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
         
-        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
-
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
         verificarSeCategoriaFoiEncontrado(rows.length, res)
-
         verificarTipoEntradaOuSaida(tipo, res)
 
         const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id)
@@ -184,7 +182,7 @@ const cadastrarTransacao = async (req, res) => {
          
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 
 }
@@ -200,11 +198,9 @@ const editarTransacao = async (req, res) => {
         const {rows} = await buscarUmaTransacaoQuery(validarToken.id, id)
 
         verificarTransacaoExiste(rows.length, res)
-
-        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res)
+        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
         const transacaoExiste = await trasacaoExisteNoUsuario(validarToken.id, categoria_id)
         verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)
-
         verificarTipoEntradaOuSaida(tipo, res)
 
        await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, validarToken.id, id)
@@ -212,7 +208,7 @@ const editarTransacao = async (req, res) => {
         return res.status(204).json()
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 }
 
@@ -230,7 +226,7 @@ const excluirTransacao = async (req, res) => {
         return res.status(204).json()
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 }
 
@@ -249,7 +245,7 @@ const extratoTransacoes = async (req, res) => {
         
     } catch (e) {
         console.log(e.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'})
+        return res.status(401).json({message: objMensagens.tokenInvalido})
     }
 }
 
@@ -261,7 +257,7 @@ const listarCategorias = async (req, res) => {
         return res.status(200).json(resultado.rows);
     } catch (error) {
         console.log(error.message);
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+        return res.status(401).json({message: objMensagens.tokenInvalido});
     }
 };
 
@@ -270,30 +266,30 @@ const detalharCategoria = async (req, res) => {
     try {
         const validarToken = prepararToken(authorization);
         const resultado = await detalharCategoriaQuery(req.params.id, validarToken.id);
-        if (resultado.rowCount === 0) {
-            return res.status(404).json({mensagem: 'Nenhuma categoria encontrada'});
-        } else {
+        
+        verificarSeCategoriaFoiEncontrado(resultado.rows, res)
+
             return res.status(200).json(resultado.rows);
-        }
+        
     } catch (error) {
         console.log(error.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+        return res.status(401).json({message: objMensagens.tokenInvalido});
     }   
 };
 
 const criarCategoria = async (req, res) => {
     const {authorization} = req.headers;
     const {descricao} = req.body
-    if (!descricao) {
-        return res.status(401).json({message: 'A descrição da categoria deve ser informada.'})
-    }
+
     try {
         const validarToken = prepararToken(authorization);
+
+        verificarCamposPassados([descricao], res, objMensagens.categoriaDeveSerInformada)
         const {rows} = await cadastrarCategoriasQuery(validarToken.id, descricao);
         return res.status(201).json(rows[0]);
     } catch (error) {
         console.log(error.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+        return res.status(401).json({message: objMensagens.tokenInvalido});
     }   
 }
 
@@ -301,20 +297,19 @@ const atualizarCategoria = async (req, res) => {
     const {authorization} = req.headers;
     const { descricao } = req.body;
     const { id } = req.params;
-    if (!descricao) {
-        return res.status(400).json({message: 'Informar descrição da categoria para alteração'});
-    }
+    
     try {
         const validarToken = prepararToken(authorization);
+        verificarCamposPassados([descricao], res, objMensagens.informarCategoria)
         const verificarCategoria = await detalharCategoriaQuery(id, validarToken.id);
-        if (verificarCategoria.rowCount === 0 || validarToken.id != verificarCategoria.rows[0].usuario_id ){
-            return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
-        }
+
+        usuarioAcessoCategoria(verificarCategoria.rowCount, validarToken.id, verificarCategoria.rows[0].usuario_id, res )
+
         await atualizarCategoriaQuery(descricao, id);
         return res.status(204).json();
     } catch (error) {
         console.log(error.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+        return res.status(401).json({message: objMensagens.tokenInvalido});
     }  
 }
 
@@ -325,9 +320,8 @@ const excluirCategoria = async (req, res) => {
     try {
         const validarToken = prepararToken(authorization);
         const verificarCategoria = await detalharCategoriaQuery(id, validarToken.id);
-        if (verificarCategoria.rowCount === 0 || validarToken.id != verificarCategoria.rows[0].usuario_id ){
-            return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
-        }
+        usuarioAcessoCategoria(verificarCategoria.rowCount, validarToken.id, verificarCategoria.rows[0].usuario_id, res )
+        
         const { rowCount } = await verificarTransacoesPorCategoria(id);
         if (rowCount > 0) {
             return res.status(401).json({message: 'Não é possivel excluir categoria associada a uma ou mais transações'})
@@ -336,7 +330,7 @@ const excluirCategoria = async (req, res) => {
         return res.status(204).json();
     } catch (error) {
         console.log(error.message)
-        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+        return res.status(401).json({message: objMensagens.tokenInvalido});
     }    
 }
 
