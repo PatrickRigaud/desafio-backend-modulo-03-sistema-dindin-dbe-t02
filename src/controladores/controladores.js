@@ -4,7 +4,7 @@ const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verifi
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken');
-const { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery } = require('../data/categoriasData');
+const { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery, verificarTransacoesPorCategoria, excluirCategoriaQuery } = require('../data/categoriasData');
 require('dotenv').config()
 
 
@@ -284,9 +284,11 @@ const detalharCategoria = async (req, res) => {
 const criarCategoria = async (req, res) => {
     const {authorization} = req.headers;
     const {descricao} = req.body
+    if (!descricao) {
+        return res.status(401).json({message: 'A descrição da categoria deve ser informada.'})
+    }
     try {
         const validarToken = prepararToken(authorization);
-        console.log(validarToken)
         const {rows} = await cadastrarCategoriasQuery(validarToken.id, descricao);
         return res.status(201).json(rows[0]);
     } catch (error) {
@@ -295,6 +297,48 @@ const criarCategoria = async (req, res) => {
     }   
 }
 
+const atualizarCategoria = async (req, res) => {
+    const {authorization} = req.headers;
+    const { descricao } = req.body;
+    const { id } = req.params;
+    if (!descricao) {
+        return res.status(400).json({message: 'Informar descrição da categoria para alteração'});
+    }
+    try {
+        const validarToken = prepararToken(authorization);
+        const verificarCategoria = await detalharCategoriaQuery(id, validarToken.id);
+        if (verificarCategoria.rowCount === 0 || validarToken.id != verificarCategoria.rows[0].usuario_id ){
+            return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
+        }
+        await atualizarCategoriaQuery(descricao, id);
+        return res.status(204).json();
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }  
+}
+
+const excluirCategoria = async (req, res) => {
+    const {authorization} = req.headers;
+    const { id } = req.params;
+
+    try {
+        const validarToken = prepararToken(authorization);
+        const verificarCategoria = await detalharCategoriaQuery(id, validarToken.id);
+        if (verificarCategoria.rowCount === 0 || validarToken.id != verificarCategoria.rows[0].usuario_id ){
+            return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
+        }
+        const { rowCount } = await verificarTransacoesPorCategoria(id);
+        if (rowCount > 0) {
+            return res.status(401).json({message: 'Não é possivel excluir categoria associada a uma ou mais transações'})
+        }
+        await excluirCategoriaQuery(id);
+        return res.status(204).json();
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }    
+}
 
 module.exports = {
     cadastrarUsuario,
@@ -309,5 +353,7 @@ module.exports = {
     extratoTransacoes,
     listarCategorias,
     detalharCategoria,
-    criarCategoria
+    criarCategoria,
+    atualizarCategoria,
+    excluirCategoria
 }
