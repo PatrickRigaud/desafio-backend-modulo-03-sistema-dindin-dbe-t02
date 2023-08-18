@@ -4,7 +4,7 @@ const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verifi
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken');
-const { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery, verificarTransacoesPorCategoria, excluirCategoriaQuery } = require('../data/categoriasData');
+const { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery, verificarTransacoesPorCategoria, excluirCategoriaQuery, filtrarTransacoes } = require('../data/categoriasData');
 require('dotenv').config()
 
 
@@ -338,6 +338,24 @@ const excluirCategoria = async (req, res) => {
     }    
 }
 
+const filtroTranscoes = async (req, res) => {
+    const { filtro } = req.query;
+    console.log(req.query)
+    const filtroArray = filtro.map((item) => {
+        return item = '%'+item+'%'
+    });
+    console.log(filtroArray)
+    try {
+        const filtragem = await filtrarTransacoes(req.usuario_id, filtroArray);
+        console.log(filtragem)
+        return res.json({mensagem:'ok'})
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }
+    
+}
+
 
 module.exports = {
     cadastrarUsuario,
@@ -354,5 +372,6 @@ module.exports = {
     detalharCategoria,
     criarCategoria,
     atualizarCategoria,
-    excluirCategoria
+    excluirCategoria,
+    filtroTranscoes
 }
