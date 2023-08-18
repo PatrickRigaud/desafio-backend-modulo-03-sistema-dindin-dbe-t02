@@ -1,6 +1,6 @@
 const express = require('express');
 const rotas = express();
-const {cadastrarUsuario, loginUsuario, detalharUsuario, alterarUsuario, listarTransacoes, buscarTransacao, cadastrarTransacao, editarTransacao, excluirTransacao, extratoTransacoes, listarCategorias, detalharCategoria, criarCategoria, atualizarCategoria, excluirCategoria} = require('../controladores/controladores');
+const {cadastrarUsuario, loginUsuario, detalharUsuario, alterarUsuario, listarTransacoes, buscarTransacao, cadastrarTransacao, editarTransacao, excluirTransacao, extratoTransacoes, listarCategorias, detalharCategoria, criarCategoria, atualizarCategoria, excluirCategoria, filtroTranscoes} = require('../controladores/controladores');
 const { validador } = require('../controladores/intermediarios');
 
 
@@ -26,6 +26,7 @@ rotas.post('/transacao', cadastrarTransacao)
 rotas.put('/transacao/:id', editarTransacao)
 rotas.delete('/transacao/:id', excluirTransacao)
 
+rotas.get('/produtos', filtroTranscoes)
 
 
 module.exports = rotas;
