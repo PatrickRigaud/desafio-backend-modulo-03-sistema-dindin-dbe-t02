@@ -26,4 +26,8 @@ const excluirCategoriaQuery = (id) => {
     return db.query('delete from categorias where id = $1', [id]);
 }
 
-module.exports = { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery , verificarTransacoesPorCategoria , excluirCategoriaQuery };
+const filtrarTransacoes = (usuario_id, filtro) => {
+    return db.query('select * from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.usuario_id = $1 and categorias.descricao ilike any(array $2)' , [usuario_id, filtro]);
+} //verificar 
+
+module.exports = { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery , verificarTransacoesPorCategoria , excluirCategoriaQuery , filtrarTransacoes};
