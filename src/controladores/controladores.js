@@ -335,14 +335,18 @@ const excluirCategoria = async (req, res) => {
 }
 
 const filtroTranscoes = async (req, res) => {
-    const { filtro } = req.query;
-    const filtroArray = filtro.map((item) => {
-        return item = '%'+item+'%'
-    });
+   
     try {
-        const {rows} = await filtrarTransacoes(req.usuario_id_token, filtroArray);
-        
-        return res.json(rows)
+        const {rows} = await filtrarTransacoes(req.usuario_id_token, req.query.filtro);
+        const filtroComCategoriaNome = rows.map( async (item) => {
+            const categoria_nome = await detalharCategoriaQuery(item.categoria_id, item.usuario_id)
+
+            item.categoria_nome = categoria_nome.rows[0].descricao
+            return item
+        })
+        const filtroComCategoriaNomePromessaCompleta = await Promise.all(filtroComCategoriaNome)
+
+        return res.json(filtroComCategoriaNomePromessaCompleta)
     } catch (error) {
         console.log(error.message)
         return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
