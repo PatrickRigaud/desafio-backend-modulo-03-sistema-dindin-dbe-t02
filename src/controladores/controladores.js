@@ -11,8 +11,13 @@ require('dotenv').config()
 const cadastrarUsuario = async (req, res) => {
     const {nome, email, senha} = req.body
 
-    verificarCamposPassados([nome, email, senha], res, objMensagens.categoriaDeveSerInformada)
+    const validacaoCampos = () =>  {return verificarCamposPassados([nome, email, senha], res, objMensagens.categoriaDeveSerInformada)}
 
+    if(validacaoCampos()){
+        return
+    }
+
+    
   try{
     const senhaEncriptada = await bcrypt.hash(senha, 10)
     if(validator.validate(email)){
