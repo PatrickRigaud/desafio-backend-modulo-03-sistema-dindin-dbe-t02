@@ -1,6 +1,6 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
-const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes} = require('../data/transacoesData')
-const { prepararToken, verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida, objMensagens, usuarioAcessoCategoria} = require('./suporte')
+const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes, filtrarTransacoes} = require('../data/transacoesData')
+const { verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida, objMensagens, usuarioAcessoCategoria} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken');
@@ -159,9 +159,15 @@ const cadastrarTransacao = async (req, res) => {
     try {
         const {rows} = await trasacaoExisteNoUsuario(req.usuario_id_token, categoria_id)
         
-        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
-        verificarSeCategoriaFoiEncontrado(rows.length, res)
-        verificarTipoEntradaOuSaida(tipo, res)
+        const validacaoCampos = () =>  {return verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)}
+        const validacaoCategoria = () =>  {return verificarSeCategoriaFoiEncontrado(rows.length, res)}
+        const validacaoTipo = () => {return verificarTipoEntradaOuSaida(tipo, res)}
+
+       for(let item of [validacaoCampos, validacaoCategoria, validacaoTipo]){
+            if(item()){
+                return
+            }
+       }
 
         const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, req.usuario_id_token)
         retornoCadastro.rows[0].categoria_nome = rows[0].descricao
@@ -183,11 +189,17 @@ const editarTransacao = async (req, res) => {
     try {
         const {rows} = await buscarUmaTransacaoQuery(req.usuario_id_token, id)
 
-        verificarTransacaoExiste(rows.length, res)
-        verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
+        const validacaoTransacao = () =>  {return verificarTransacaoExiste(rows.length, res)}
+        const validacaoCampos = () =>  {return verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)}
         const transacaoExiste = await trasacaoExisteNoUsuario(req.usuario_id_token, categoria_id)
-        verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)
-        verificarTipoEntradaOuSaida(tipo, res)
+        const validacaoCategoria = () =>  {return verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)}
+        const validacaoTipo = () =>  {return verificarTipoEntradaOuSaida(tipo, res)}
+
+        for(let item of [validacaoTransacao, validacaoCampos, validacaoCategoria, validacaoTipo]){
+            if(item()){
+                return
+            }
+       }
 
        await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, req.usuario_id_token, id)
 
@@ -204,8 +216,11 @@ const excluirTransacao = async (req, res) => {
     try {
         const {rows} = await buscarUmaTransacaoQuery(req.usuario_id_token, id)
 
-        verificarTransacaoExiste(rows.length, res)
-        
+        const validacaoTransacao = () =>  {return verificarTransacaoExiste(rows.length, res)}
+        if(validacaoTransacao()){
+            return
+        }
+
         await excluirUmaTransacaoQuery(req.usuario_id_token, id)
         return res.status(204).json()
     } catch (e) {
@@ -243,8 +258,11 @@ const detalharCategoria = async (req, res) => {
     try {
         const resultado = await detalharCategoriaQuery(req.params.id, req.usuario_id_token);
         
-        verificarSeCategoriaFoiEncontrado(resultado.rows, res)
-
+        const validacaoCategoria = () => {return verificarSeCategoriaFoiEncontrado(resultado.rows, res)}
+        if(validacaoCategoria()){
+            return
+        }
+        
             return res.status(200).json(resultado.rows);
         
     } catch (error) {
@@ -257,7 +275,12 @@ const criarCategoria = async (req, res) => {
     const {descricao} = req.body
 
     try {
-        verificarCamposPassados([descricao], res, objMensagens.categoriaDeveSerInformada)
+        const validacaoCategoria = () => {return verificarCamposPassados([descricao], res, objMensagens.categoriaDeveSerInformada)}
+
+        if(validacaoCategoria()){
+            return
+        }
+        
         const {rows} = await cadastrarCategoriasQuery(req.usuario_id_token, descricao);
         return res.status(201).json(rows[0]);
     } catch (error) {
@@ -271,10 +294,15 @@ const atualizarCategoria = async (req, res) => {
     const { id } = req.params;
     
     try {
-        verificarCamposPassados([descricao], res, objMensagens.informarCategoria)
+        const validacaoCampos = () => {return verificarCamposPassados([descricao], res, objMensagens.informarCategoria)}
         const verificarCategoria = await detalharCategoriaQuery(id, req.usuario_id_token);
+        const validacaoCategoria = () => {return usuarioAcessoCategoria(verificarCategoria.rowCount, req.usuario_id_token, verificarCategoria.rows[0].usuario_id, res )}
 
-        usuarioAcessoCategoria(verificarCategoria.rowCount, req.usuario_id_token, verificarCategoria.rows[0].usuario_id, res )
+        for(let item of [validacaoCampos, validacaoCategoria]){
+            if(item()){
+                return
+            }
+       }
 
         await atualizarCategoriaQuery(descricao, id);
         return res.status(204).json();
@@ -289,8 +317,11 @@ const excluirCategoria = async (req, res) => {
 
     try {
         const verificarCategoria = await detalharCategoriaQuery(id, req.usuario_id_token);
-        usuarioAcessoCategoria(verificarCategoria.rowCount, req.usuario_id_token, verificarCategoria.rows[0].usuario_id, res )
-        
+        const validacaoCategoria = () => {return usuarioAcessoCategoria(verificarCategoria.rowCount, req.usuario_id_token, verificarCategoria.rows[0].usuario_id, res )}
+        if(validacaoCategoria()){
+            return
+        }
+
         const { rowCount } = await verificarTransacoesPorCategoria(id);
         if (rowCount > 0) {
             return res.status(401).json({message: 'Não é possivel excluir categoria associada a uma ou mais transações'})
@@ -301,6 +332,24 @@ const excluirCategoria = async (req, res) => {
         console.log(error.message)
         return res.status(401).json({message: objMensagens.tokenInvalido});
     }    
+}
+
+const filtroTranscoes = async (req, res) => {
+    const { filtro } = req.query;
+    console.log(req.query)
+    const filtroArray = filtro.map((item) => {
+        return item = '%'+item+'%'
+    });
+    console.log(filtroArray)
+    try {
+        const filtragem = await filtrarTransacoes(req.usuario_id, filtroArray);
+        console.log(filtragem)
+        return res.json({mensagem:'ok'})
+    } catch (error) {
+        console.log(error.message)
+        return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});
+    }
+    
 }
 
 module.exports = {
@@ -318,5 +367,6 @@ module.exports = {
     detalharCategoria,
     criarCategoria,
     atualizarCategoria,
-    excluirCategoria
+    excluirCategoria,
+    filtroTranscoes
 }

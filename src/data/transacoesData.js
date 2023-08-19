@@ -30,6 +30,10 @@ const buscarTodasTransacoes = (usuario_id) => {
     return database.query("SELECT 'entrada' AS tipo, SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END) AS total FROM transacoes WHERE usuario_id = $1  UNION ALL  SELECT 'saida' AS tipo, SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END) AS total FROM transacoes WHERE usuario_id = $1;", [usuario_id])
 }
 
+const filtrarTransacoes = (usuario_id, filtro) => {
+    return db.query('select * from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.usuario_id = $1 and categorias.descricao ilike any(array $2)' , [usuario_id, filtro]);
+} //verificar 
+
 module.exports = {
     buscarTodasTransacoesQuery,
     buscarUmaTransacaoQuery,
@@ -37,5 +41,6 @@ module.exports = {
     cadastrarTransacaoQuery,
     editarUmaTransacaoQuery,
     excluirUmaTransacaoQuery,
-    buscarTodasTransacoes
+    buscarTodasTransacoes,
+    filtrarTransacoes
 }

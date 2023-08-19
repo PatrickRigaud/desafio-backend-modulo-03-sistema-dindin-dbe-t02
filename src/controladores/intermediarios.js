@@ -11,6 +11,13 @@ const validador = async (req, res, next) => {
     
 };
 
+
+
+
+
+
+
+
 module.exports = { validador }
 
 

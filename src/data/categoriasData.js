@@ -26,4 +26,5 @@ const excluirCategoriaQuery = (id) => {
     return db.query('delete from categorias where id = $1', [id]);
 }
 
+
 module.exports = { listarCategoriasQuery, detalharCategoriaQuery, cadastrarCategoriasQuery, atualizarCategoriaQuery , verificarTransacoesPorCategoria , excluirCategoriaQuery };

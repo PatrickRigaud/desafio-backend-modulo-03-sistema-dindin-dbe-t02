@@ -15,7 +15,8 @@ const objMensagens = {
 
 const verificarSeCategoriaFoiEncontrado = (item, res) => {
     if(item == 0){
-        return res.status(400).json({message: 'Categoria não encontrada.'})
+        res.status(400).json({message: 'Categoria não encontrada.'})
+        return true
     }
 }
 
@@ -28,22 +29,27 @@ const prepararToken = (auth) => {
 const verificarCamposPassados = (listaCamposValidar, res, message) => {
     for(let item of listaCamposValidar){
         if(!item){
-            return res.status(400).json({mensagem: message})
+            res.status(400).json({mensagem: message})
+            return true
         }
     }
+
 }
+
 
 
 
 const verificarTransacaoExiste = (transacao, res) => {
     if(transacao == 0){
-        return res.status(400).json({message: 'Transação não encontrada.'})
+        res.status(400).json({message: 'Transação não encontrada.'})
+        return true
     }
 }
 
 const verificarTipoEntradaOuSaida = (tipo, res) => {
     if(tipo != 'entrada' && tipo != 'saida'){
-        return res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
+        res.status(400).json({message: 'Tipo de transação inválida. Utilize Entrada ou Saída'})
+        return true
     }
 
 }
@@ -51,7 +57,8 @@ const verificarTipoEntradaOuSaida = (tipo, res) => {
 
 const usuarioAcessoCategoria = (categoria, id, usuario_id, res) => {
     if (categoria === 0 || id != usuario_id ){
-        return res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
+         res.status(403).json({message: 'Usuário não tem acesso a categoria informada.'});
+         return true    
     }
 }
 
