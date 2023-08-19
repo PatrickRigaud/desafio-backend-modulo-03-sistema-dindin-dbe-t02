@@ -336,15 +336,13 @@ const excluirCategoria = async (req, res) => {
 
 const filtroTranscoes = async (req, res) => {
     const { filtro } = req.query;
-    console.log(req.query)
     const filtroArray = filtro.map((item) => {
         return item = '%'+item+'%'
     });
-    console.log(filtroArray)
     try {
-        const filtragem = await filtrarTransacoes(req.usuario_id, filtroArray);
-        console.log(filtragem)
-        return res.json({mensagem:'ok'})
+        const {rows} = await filtrarTransacoes(req.usuario_id_token, filtroArray);
+        
+        return res.json(rows)
     } catch (error) {
         console.log(error.message)
         return res.status(401).json({message: 'Para acessar este recurso um token de autenticação válido deve ser enviado.'});

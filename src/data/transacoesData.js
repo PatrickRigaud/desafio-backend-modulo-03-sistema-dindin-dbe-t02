@@ -31,8 +31,8 @@ const buscarTodasTransacoes = (usuario_id) => {
 }
 
 const filtrarTransacoes = (usuario_id, filtro) => {
-    return db.query('select * from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.usuario_id = $1 and categorias.descricao ilike any(array $2)' , [usuario_id, filtro]);
-} //verificar 
+    return database.query(`select * from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.usuario_id = $1 and categorias.descricao ilike any($2)`, [usuario_id, filtro]);
+}
 
 module.exports = {
     buscarTodasTransacoesQuery,
