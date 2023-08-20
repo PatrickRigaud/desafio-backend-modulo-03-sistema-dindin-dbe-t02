@@ -7,7 +7,7 @@ const buscarTodasTransacoesQuery = (id) => {
 }
 
 const buscarUmaTransacaoQuery = (usuario_id, transacao_id) => {
-    return database.query('select * from transacoes where usuario_id = $1 and id = $2', [usuario_id, transacao_id])
+    return database.query('select transacoes.id as "id", tipo, transacoes.descricao, valor, data, transacoes.usuario_id, categoria_id, categorias.descricao as "categoria_nome" from transacoes join categorias on transacoes.categoria_id = categorias.id where transacoes.id = $1 and transacoes.usuario_id = $2;', [transacao_id, usuario_id])
 }
 
 const trasacaoExisteNoUsuario = (usuario_id, categoria_id) => {
