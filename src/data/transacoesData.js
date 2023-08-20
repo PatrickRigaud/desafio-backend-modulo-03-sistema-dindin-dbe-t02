@@ -32,7 +32,6 @@ const buscarTodasTransacoes = (usuario_id) => {
 
 const filtrarTransacoes = (usuario_id, filtro) => {
     const filtroFormatado = filtro.map(item => `%${item}%`);
-    console.log(filtroFormatado)
     return database.query(`
     select 
     transacoes.id as "id", 
