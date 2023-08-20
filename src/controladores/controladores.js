@@ -97,8 +97,11 @@ const alterarUsuario = async (req, res) => {
         let novaSenha = ''
         if (senha) {
             const senhaEncriptada = await bcrypt.hash(senha, 10)
-            senha ? novaSenha = senhaEncriptada : novaSenha = usuario.rows[0].senha 
+            novaSenha = senhaEncriptada  
+        }else{
+            novaSenha = await usuario.rows[0].senha 
         }
+        
         nome ? novoNome = nome : novoNome = usuario.rows[0].nome
         email ? novoEmail = email : novoEmail = usuario.rows[0].email
         await alterarUsuarioQuery(req.usuario_id_token, novoNome, novoEmail, novaSenha)
