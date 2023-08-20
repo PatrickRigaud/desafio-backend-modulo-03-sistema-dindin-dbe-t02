@@ -216,7 +216,7 @@ const extratoTransacoes = async (req, res) => {
         const {rows} = await buscarTodasTransacoes(req.usuario_id_token)
         res.status(200).json({
             "Entrada": rows[0].total == null ? 0 : rows[0].total,
-            "Saida": rows[0].total == null ? 0 : rows[0].total
+            "Saida": rows[1].total == null ? 0 : rows[1].total
         })
     } catch (e) {
         console.log(e.message)
