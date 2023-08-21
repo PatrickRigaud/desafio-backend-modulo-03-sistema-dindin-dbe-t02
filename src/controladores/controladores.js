@@ -1,6 +1,6 @@
 const {cadastrarUsuarioQuery, buscarUsuarioPorEmail, buscarUsuarioID, alterarUsuarioQuery} = require('../data/usuariosData')
 const { buscarTodasTransacoesQuery, buscarUmaTransacaoQuery, trasacaoExisteNoUsuario, cadastrarTransacaoQuery, editarUmaTransacaoQuery, excluirUmaTransacaoQuery, buscarTodasTransacoes, filtrarTransacoes} = require('../data/transacoesData')
-const { verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida, objMensagens, usuarioAcessoCategoria} = require('./suporte')
+const { verificarCamposPassados, verificarTransacaoExiste, verificarSeCategoriaFoiEncontrado, verificarTipoEntradaOuSaida, objMensagens, usuarioAcessoCategoria,validacaoGeral} = require('./suporte')
 const bcrypt = require('bcrypt')
 const validator = require("email-validator");
 const jwt = require('jsonwebtoken');
@@ -168,23 +168,16 @@ const editarTransacao = async (req, res) => {
     const {id} = req.params
     try {
         const {rows} = await buscarUmaTransacaoQuery(req.usuario_id_token, id)
-        const validacaoTransacao = () => {
-            return verificarTransacaoExiste(rows.length, res)}
-        const validacaoCampos = () => {
-            return verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
-        }
         const transacaoExiste = await trasacaoExisteNoUsuario(req.usuario_id_token, categoria_id)
-        const validacaoCategoria = () => {
-            return verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res)
+       
+        if(validacaoGeral([
+            () => verificarTransacaoExiste(rows.length, res), 
+            () =>verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios),
+            () =>verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res),
+            () =>verificarTipoEntradaOuSaida(tipo, res)])){
+            return
         }
-        const validacaoTipo = () => {
-            return verificarTipoEntradaOuSaida(tipo, res)
-        }
-        for ( item of [validacaoTransacao, validacaoCampos, validacaoCategoria, validacaoTipo] ) {
-            if (item()) {
-               return
-            }
-        }
+
         await editarUmaTransacaoQuery(descricao, valor, data, categoria_id, tipo, req.usuario_id_token, id)
         return res.status(204).json()
     } catch (e) {

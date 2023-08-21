@@ -62,6 +62,16 @@ const usuarioAcessoCategoria = (categoria, id, usuario_id, res) => {
     }
 }
 
+const validacaoGeral = (arrValidacoes) => {
+    for(let item of arrValidacoes){
+        if(item()){
+            return true
+        }
+    }
+}
+
+
+
 
 module.exports = {
     verificarSeCategoriaFoiEncontrado,
@@ -70,5 +80,6 @@ module.exports = {
     verificarTransacaoExiste,
     verificarTipoEntradaOuSaida,
     objMensagens,
-    usuarioAcessoCategoria
+    usuarioAcessoCategoria,
+    validacaoGeral
 }
