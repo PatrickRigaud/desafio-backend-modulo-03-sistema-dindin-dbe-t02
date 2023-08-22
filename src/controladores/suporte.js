@@ -9,13 +9,14 @@ const objMensagens = {
     emailJaExiste: "Já existe usuário cadastrado com o e-mail informado.",
     usuarioSenhaInvalidos: "Usuário e/ou senha inválido(s).",
     informarCategoria: "Informar descrição da categoria para alteração",
-    informarAoMenosUmCampo: 'Para alteração é necessário enviar ao menos um campo.'
+    informarAoMenosUmCampo: 'Para alteração é necessário enviar ao menos um campo.',
+    categoriaNaoEncontrada: 'Categoria não encontrada'
 }
 
 
 const verificarSeCategoriaFoiEncontrado = (item, res) => {
     if(item == 0){
-        res.status(400).json({message: 'Categoria não encontrada.'})
+        res.status(400).json({message: objMensagens.categoriaNaoEncontrada})
         return true
     }
 }
@@ -28,15 +29,13 @@ const prepararToken = (auth) => {
 
 const verificarCamposPassados = (listaCamposValidar, res, message) => {
     for(let item of listaCamposValidar){
-        if(!item){
+        if(!item || item == null || item == undefined || item == " "){
             res.status(400).json({mensagem: message})
             return true
         }
     }
 
 }
-
-
 
 
 const verificarTransacaoExiste = (transacao, res) => {
@@ -62,9 +61,9 @@ const usuarioAcessoCategoria = (categoria, id, usuario_id, res) => {
     }
 }
 
-const validacaoGeral = (arrValidacoes) => {
-    for(let item of arrValidacoes){
-        if(item()){
+const validacaoGeral = (arrayValidacoes) => {
+    for(let item of arrayValidacoes){
+        if(item()) {
             return true
         }
     }
