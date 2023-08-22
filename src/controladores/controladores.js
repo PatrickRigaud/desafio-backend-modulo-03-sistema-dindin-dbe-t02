@@ -140,20 +140,13 @@ const cadastrarTransacao = async (req, res) => {
     const {descricao, valor, data, categoria_id, tipo} = req.body
     try {
         const {rows} = await trasacaoExisteNoUsuario(req.usuario_id_token, categoria_id)
-        const validacaoCampos = () => {
-            return verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios)
-        };
-        const validacaoCategoria = () => {
-            return verificarSeCategoriaFoiEncontrado(rows.length, res)
-        }
-        const validacaoTipo = () => {
-            return verificarTipoEntradaOuSaida(tipo, res)
-        }
-        for ( item of [validacaoCampos, validacaoCategoria, validacaoTipo] ) {
-            if (item()) {
-                return
-            }
-        }
+         
+        if(validacaoGeral([
+            () => verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios),
+            () => verificarSeCategoriaFoiEncontrado(rows.length, res),
+            () => verificarTipoEntradaOuSaida(tipo, res)
+        ])){ return }
+
         const retornoCadastro = await cadastrarTransacaoQuery(descricao, valor, data, categoria_id, tipo, req.usuario_id_token)
         retornoCadastro.rows[0].categoria_nome = rows[0].descricao
         return res.status(201).json(retornoCadastro.rows[0])
@@ -169,12 +162,13 @@ const editarTransacao = async (req, res) => {
     try {
         const {rows} = await buscarUmaTransacaoQuery(req.usuario_id_token, id)
         const transacaoExiste = await trasacaoExisteNoUsuario(req.usuario_id_token, categoria_id)
+        console.log(transacaoExiste)
        
         if(validacaoGeral([
             () => verificarTransacaoExiste(rows.length, res), 
-            () =>verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios),
-            () =>verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res),
-            () =>verificarTipoEntradaOuSaida(tipo, res)])){
+            () => verificarCamposPassados([descricao, valor, data, categoria_id, tipo], res, objMensagens.todosCamposObrigatorios),
+            () => verificarSeCategoriaFoiEncontrado(transacaoExiste.rows.length, res),
+            () => verificarTipoEntradaOuSaida(tipo, res)])){
             return
         }
 
