@@ -28,7 +28,7 @@ const prepararToken = (auth) => {
 
 const verificarCamposPassados = (listaCamposValidar, res, message) => {
     for(let item of listaCamposValidar){
-        if(!item){
+        if(!item || item == null || item == undefined || item == " "){
             res.status(400).json({mensagem: message})
             return true
         }
@@ -62,10 +62,10 @@ const usuarioAcessoCategoria = (categoria, id, usuario_id, res) => {
     }
 }
 
-const validacaoGeral = (arrValidacoes) => {
-    for(let item of arrValidacoes){
-        if(item()){
-            return true
+const validacaoGeral = (arrayValidacoes) => {
+    for(let item of arrayValidacoes){
+        if(item) {
+            return
         }
     }
 }
